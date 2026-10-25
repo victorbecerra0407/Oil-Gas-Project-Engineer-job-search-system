@@ -108,9 +108,15 @@ function parseCsv(raw: string): string[][] {
   return rows;
 }
 
+
+const csvPath = fs.existsSync("data/companies.csv")
+  ? "data/companies.csv"
+  : "companies.csv";
+
 const csv = parseCsv(
-  fs.readFileSync("data/companies.csv", "utf8")
+  fs.readFileSync(csvPath, "utf8")
 );
+
 
 const header = csv.shift()?.map(x => x.trim()) || [];
 
