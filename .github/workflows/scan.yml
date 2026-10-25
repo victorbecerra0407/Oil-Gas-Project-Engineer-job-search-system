@@ -27,9 +27,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-
-      - name: Install dependencies
-        run: npm install
+          
+      - name: Verify company file
+        run: |
+          pwd
+          ls -la data
+          cat data/companies.csv
 
       - name: TypeScript check
         run: npm run check
