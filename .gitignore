@@ -1,0 +1,12 @@
+
+node_modules/
+dist/
+.env
+*.sqlite
+*.sqlite-*
+data/sent-log.jsonl
+data/private/
+config/private*
+site/
+*.pdf
+*.docx
