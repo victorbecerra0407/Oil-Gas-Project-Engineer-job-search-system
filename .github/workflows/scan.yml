@@ -38,6 +38,9 @@ jobs:
           ls -la data
 
 
+      - name: Install dependencies
+        run: npm install
+
       - name: TypeScript check
         run: npm run check
 
