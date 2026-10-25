@@ -29,13 +29,18 @@ jobs:
           node-version: "22"
           
       
-      - name: Fix company file location
+      - name: Prepare company database
         run: |
           mkdir -p data
-          if [ -f companies.csv ]; then
-            mv companies.csv data/companies.csv
+          if [ ! -f data/companies.csv ]; then
+            if [ -f companies.csv ]; then
+              cp companies.csv data/companies.csv
+            else
+              printf 'name,country,website,careers_url\n' > data/companies.csv
+            fi
           fi
-          ls -la data
+          echo "Company database ready:"
+          cat data/companies.csv
 
 
       - name: Install dependencies
