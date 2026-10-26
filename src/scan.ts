@@ -221,7 +221,35 @@ for (const c of companies.slice(0, max)) {
         continue;
       }
 
-      if (!validUrl(url) || !sameHost(url, c.website)) continue;
+      
+      if (!validUrl(url)) continue;
+
+      const linkHost = new URL(url).hostname.toLowerCase();
+      const careersHost = new URL(c.careers_url).hostname.toLowerCase();
+
+      const approvedPlatforms = [
+        "myworkdayjobs.com",
+        "greenhouse.io",
+        "lever.co",
+        "smartrecruiters.com",
+        "successfactors.com",
+        "icims.com",
+        "ashbyhq.com",
+        "workable.com"
+      ];
+
+      const isApprovedPlatform = approvedPlatforms.some(
+        platform =>
+          linkHost === platform ||
+          linkHost.endsWith("." + platform)
+      );
+
+      if (
+        !sameHost(url, c.website) &&
+        !sameHost(url, c.careers_url) &&
+        !isApprovedPlatform
+      ) continue;
+
 
       if (!profile.keywords.some((k: string) =>
         title.toLowerCase().includes(k))) continue;
