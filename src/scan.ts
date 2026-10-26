@@ -207,6 +207,14 @@ for (const c of companies.slice(0, max)) {
   }
 
   const careers = await fetchHtml(c.careers_url);
+  
+  console.log(
+    `[DIAGNOSTIC] ${c.name} (${c.country}) | ` +
+    `Careers URL: ${c.careers_url} | ` +
+    `Page accessible: ${careers !== null} | ` +
+    `HTML length: ${careers?.length ?? 0}`
+  );
+
 
   if (careers) {
     const $ = cheerio.load(careers);
