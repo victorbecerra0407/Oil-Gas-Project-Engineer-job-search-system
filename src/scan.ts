@@ -134,13 +134,16 @@ for (const row of csv) {
     header.map((h, i) => [h, row[i]?.trim() || ""])
   );
 
+ 
   if (
     !r.name ||
     !profile.countries.includes(r.country) ||
-    !validUrl(r.website) ||
-    !validUrl(r.careers_url) ||
-    !sameHost(r.website, r.careers_url)
+    !validUrl(r.website)
   ) continue;
+
+  if (!validUrl(r.careers_url)) {
+    r.careers_url = r.website;
+  }
 
   upsert.run(r.name, r.country, r.website, r.careers_url);
 }
