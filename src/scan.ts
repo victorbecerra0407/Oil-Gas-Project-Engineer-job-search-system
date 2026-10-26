@@ -287,6 +287,12 @@ for (const c of companies.slice(0, max)) {
 
       const now = new Date().toISOString();
       saveJob.run(c.id, jobTitle.slice(0, 250), url, now, now);
+      
+      console.log(
+        `[JOB CANDIDATE] ${c.name} (${c.country}) | ` +
+        `Title: ${jobTitle.slice(0, 100)} | URL: ${url}`
+      );
+
       count++;
     }
 
