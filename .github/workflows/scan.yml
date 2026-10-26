@@ -28,7 +28,17 @@ jobs:
         with:
           node-version: "22"
           
-      
+      - name: Inspect company files
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Tracked files:"
+          git ls-files data
+          echo "Actual filenames:"
+          ls -lb data
+          echo "CSV contents:"
+          find data -maxdepth 1 -type f -exec wc -l {} \;
+          
       - name: Prepare company database
         run: |
           mkdir -p data
