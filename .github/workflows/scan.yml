@@ -28,16 +28,25 @@ jobs:
         with:
           node-version: "22"
           
+      
       - name: Inspect company files
         run: |
-          echo "Current directory:"
-          pwd
-          echo "Tracked files:"
-          git ls-files data
-          echo "Actual filenames:"
-          ls -lb data
-          echo "CSV contents:"
-          find data -maxdepth 1 -type f -exec wc -l {} \;
+          echo "Current commit:"
+          git rev-parse --short HEAD
+          echo "All tracked paths:"
+          git ls-files | cat -A
+          echo "Repository contents:"
+          ls -la
+          echo "Company file candidates:"
+          find . -maxdepth 3 -iname '*companies*' -print
+          echo "Expected CSV:"
+          if [ -f data/companies.csv ]; then
+            wc -l data/companies.csv
+            head -n 3 data/companies.csv
+          else
+            echo "Expected CSV not found"
+          fi
+
           
       - name: Prepare company database
         run: |
