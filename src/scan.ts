@@ -251,11 +251,34 @@ for (const c of companies.slice(0, max)) {
       ) continue;
 
 
-      if (!profile.keywords.some((k: string) =>
-        title.toLowerCase().includes(k))) continue;
+   
+      const context = $(a)
+        .closest("article,li,tr,[class*='job'],[class*='position']")
+        .first()
+        .text()
+        .replace(/\s+/g, " ")
+        .trim();
+
+      const searchableText = `${title} ${context}`.toLowerCase();
+
+      const matchingKeywords = profile.keywords.filter(
+        (keyword: string) =>
+          searchableText.includes(keyword.toLowerCase())
+      );
+
+      if (matchingKeywords.length === 0) continue;
+
+      const jobTitle =
+        title.length >= 8 &&
+        !/^(apply|view|details|learn more|read more)/i.test(title)
+          ? title
+          : context.slice(0, 150);
+
+      if (!jobTitle || jobTitle.length < 8) continue;
+
 
       const now = new Date().toISOString();
-      saveJob.run(c.id, title.slice(0, 250), url, now, now);
+      saveJob.run(c.id, jobTitle.slice(0, 250), url, now, now);
       count++;
     }
 
