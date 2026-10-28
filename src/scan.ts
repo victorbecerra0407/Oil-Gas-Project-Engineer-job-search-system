@@ -266,8 +266,9 @@ const excludedTitles =
 if (excludedTitles.test(cleanTitle)) continue;
 
 // The job title itself must match Victor's target roles.
+
 const targetRoles =
-  /\b(project engineer|mechanical project engineer|offshore project engineer|piping project engineer|fabrication project engineer)\b/i;
+  /\b(project engineer|mechanical engineer|offshore engineer|piping engineer|fabrication engineer|project coordinator|project manager)\b/i;
 
 if (!targetRoles.test(cleanTitle)) continue;
 
