@@ -1,34 +1,22 @@
 
 import fs from "node:fs";
+import * as cheerio from "cheerio";
 import { db, getOrCreateCompany } from "./db.js";
-
-type AdzunaJob = {
-  title?: string;
-  description?: string;
-  redirect_url?: string;
-  company?: { display_name?: string };
-  location?: { display_name?: string };
-};
 
 const profile = JSON.parse(
   fs.readFileSync("config/profile.json", "utf8")
 );
 
-const appId = process.env.ADZUNA_APP_ID;
-const appKey = process.env.ADZUNA_APP_KEY;
+const keywords: string[] = profile.keywords;
 
-if (!appId || !appKey) {
-  console.error(
-    "Missing ADZUNA_APP_ID or ADZUNA_APP_KEY."
-  );
-  process.exit(1);
-}
-
-const countries = [
-  { code: "sg", name: "Singapore" },
-  { code: "au", name: "Australia" },
-  { code: "nz", name: "New Zealand" }
-];
+type Job = {
+  title: string;
+  description: string;
+  company: string;
+  location: string;
+  url: string;
+  source: string;
+};
 
 const saveJob = db.prepare(`
   INSERT INTO jobs (
@@ -40,91 +28,136 @@ const saveJob = db.prepare(`
     last_seen = excluded.last_seen
 `);
 
-let total = 0;
+function cleanText(html: string): string {
+  return cheerio.load(html).text()
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-for (const country of countries) {
-  for (const keyword of profile.keywords as string[]) {
-    const params = new URLSearchParams({
-      app_id: appId,
-      app_key: appKey,
-      what: keyword,
-      results_per_page: "50",
-      "content-type": "application/json"
-    });
+function matchesKeywords(job: Job): string[] {
+  const text = (
+    job.title + " " + cleanText(job.description)
+  ).toLowerCase();
 
-    const url =
-      `https://api.adzuna.com/v1/api/jobs/${country.code}/search/1?${params}`;
+  return keywords.filter(keyword =>
+    text.includes(keyword.toLowerCase())
+  );
+}
 
-    try {
-      const response = await fetch(url, {
-        signal: AbortSignal.timeout(20000)
+async function getJson(url: string): Promise<any> {
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(20000),
+    headers: { "Accept": "application/json" }
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function fetchRemotive(): Promise<Job[]> {
+  const data = await getJson(
+    "https://remotive.com/api/remote-jobs"
+  );
+
+  return (data.jobs || []).map((job: any) => ({
+    title: job.title || "",
+    description: job.description || "",
+    company: job.company_name || "Unknown employer",
+    location: job.candidate_required_location || "Remote",
+    url: job.url || "",
+    source: "Remotive"
+  }));
+}
+
+async function fetchArbeitnow(): Promise<Job[]> {
+  const results: Job[] = [];
+
+  for (let page = 1; page <= 3; page++) {
+    const data = await getJson(
+      `https://www.arbeitnow.com/api/job-board-api?page=${page}`
+    );
+
+    for (const job of data.data || []) {
+      results.push({
+        title: job.title || "",
+        description: job.description || "",
+        company: job.company_name || "Unknown employer",
+        location: job.location || "Unknown",
+        url: job.url || "",
+        source: "Arbeitnow"
       });
+    }
 
-      if (!response.ok) {
-        console.log(
-          `[API ERROR] ${country.name}: ${response.status}`
-        );
-        continue;
-      }
+    if (!data.links?.next) break;
+  }
 
-      const data = await response.json() as {
-        results?: AdzunaJob[];
-      };
+  return results;
+}
 
-      let count = 0;
+const sources = [
+  { name: "Remotive", fetchJobs: fetchRemotive },
+  { name: "Arbeitnow", fetchJobs: fetchArbeitnow }
+];
 
-      for (const job of data.results || []) {
-        const title = job.title || "";
-        const description = job.description || "";
-        const searchable =
-          `${title} ${description}`.toLowerCase();
+let total = 0;
+const seen = new Set<string>();
 
-        const matches = (profile.keywords as string[])
-          .filter(keyword =>
-            searchable.includes(keyword.toLowerCase())
-          );
+for (const source of sources) {
+  try {
+    const jobs = await source.fetchJobs();
 
-        if (matches.length === 0) continue;
-        if (!job.redirect_url) continue;
+    console.log(
+      `[SOURCE] ${source.name}: ${jobs.length} offers retrieved`
+    );
 
-        const companyName =
-          job.company?.display_name || "Unknown employer";
+    for (const job of jobs) {
+      if (!job.title || !job.url) continue;
 
-        const companyId = getOrCreateCompany(
-          companyName,
-          country.name,
-          job.redirect_url
-        );
+      const matches = matchesKeywords(job);
+      if (matches.length === 0) continue;
+      if (seen.has(job.url)) continue;
 
-        const now = new Date().toISOString();
+      seen.add(job.url);
 
-        saveJob.run(
-          companyId,
-          title,
-          job.redirect_url,
-          now,
-          now
-        );
+      // Only save jobs with a confirmed target country.
+      const country = profile.countries.find(
+        (c: string) =>
+          job.location.toLowerCase().includes(c.toLowerCase())
+      );
 
-        count++;
-        total++;
+      if (!country) continue;
 
-        console.log(
-          `[JOB FOUND] ${country.name} | ${companyName} | ${title}`
-        );
-      }
+      const companyId = getOrCreateCompany(
+        job.company,
+        country,
+        job.url
+      );
+
+      const now = new Date().toISOString();
+
+      saveJob.run(
+        companyId,
+        job.title,
+        job.url,
+        now,
+        now
+      );
+
+      total++;
 
       console.log(
-        `[SEARCH] ${country.name} | ${keyword}: ${count} matches`
-      );
-    } catch (error) {
-      console.error(
-        `[ERROR] ${country.name} | ${keyword}`,
-        error
+        `[JOB FOUND] ${job.source} | ${country} | ` +
+        `${job.company} | ${job.title} | ` +
+        `Keywords: ${matches.join(", ")}`
       );
     }
+  } catch (error) {
+    console.error(`[SOURCE ERROR] ${source.name}`, error);
   }
 }
 
-console.log(`Total matching results processed: ${total}`);
+console.log(`Total matching jobs saved: ${total}`);
 db.close();
