@@ -258,51 +258,59 @@ for (const c of companies.slice(0, max)) {
         !isApprovedPlatform
       ) continue;
 
-    const cleanTitle = title.replace(/\s+/g, " ").trim();
+   
+const cleanTitle = title.replace(/\s+/g, " ").trim();
 
-const excludedTitles =
-  /privacy|recruitment scams?|diversity|inclusion|cookie|policy|terms|about us|our people|career opportunities|recruitment site|all jobs|explore jobs|view jobs|job alerts|talent community|home careers/i;
+const context = $(a)
+  .closest("article,li,tr,[class*='job'],[class*='position']")
+  .first()
+  .text()
+  .replace(/\s+/g, " ")
+  .trim();
 
-if (excludedTitles.test(cleanTitle)) continue;
+// Match at least ONE keyword in the title or nearby text.
+const searchableText = `${cleanTitle} ${context}`.toLowerCase();
 
-// The job title itself must match Victor's target roles.
+const matchingKeywords = profile.keywords.filter(
+  (keyword: string) =>
+    searchableText.includes(keyword.toLowerCase())
+);
 
-const targetRoles =
-  /\b(project engineer|mechanical engineer|offshore engineer|piping engineer|fabrication engineer|project coordinator|project manager)\b/i;
+if (matchingKeywords.length === 0) continue;
 
-if (!targetRoles.test(cleanTitle)) continue;
+// Exclude obvious navigation and non-job pages.
+const excludedPages =
+  /privacy|recruitment scams?|diversity|inclusion|cookie|policy|terms|about us|recruitment site|all jobs|explore jobs|view jobs|job alerts|talent community/i;
 
-// Reject obvious graduate and internship positions.
-if (/\b(intern|internship|graduate|trainee|apprentice)\b/i.test(cleanTitle)) {
-  continue;
-}
+if (excludedPages.test(cleanTitle)) continue;
 
-// Reject navigation links and generic career pages.
-const genericPath =
-  /\/(privacy|scam|diversity|about|contact|recruitment|careers?)\/?$/i;
-
-if (genericPath.test(new URL(url).pathname)) continue;
-
-// Look for a job-specific URL or a structured job listing.
+// Require evidence that the link points to a job offer.
 const jobUrlPattern =
-  /\/(job|jobs|job-description|jobdetail|jobdetails|position|positions|vacancy|vacancies|requisition|req)\b|\/job\/[^/]+|\/jobs\/[^/]+/i;
+  /\/(job|jobs|job-description|jobdetail|jobdetails|position|positions|vacancy|vacancies|requisition|req)\b/i;
 
 const jobContainer = $(a).closest(
-  "article,li,tr,[class*='job-card'],[class*='job-listing'],[class*='job-result'],[data-job-id]"
+  "[data-job-id],[class*='job-card'],[class*='job-listing'],[class*='job-result']"
 );
 
 const hasJobEvidence =
   jobUrlPattern.test(new URL(url).pathname) ||
-  jobContainer.is("[data-job-id]") ||
-  jobContainer.is("[class*='job-card'],[class*='job-listing'],[class*='job-result']");
+  jobContainer.length > 0;
 
 if (!hasJobEvidence) continue;
+
+const jobTitle =
+  cleanTitle.length >= 8 &&
+  !/^(apply|view|details|learn more|read more)$/i.test(cleanTitle)
+    ? cleanTitle
+    : context.slice(0, 150);
+
+if (!jobTitle || jobTitle.length < 8) continue;
 
 const now = new Date().toISOString();
 
 saveJob.run(
   c.id,
-  cleanTitle.slice(0, 250),
+  jobTitle.slice(0, 250),
   url,
   now,
   now
@@ -310,10 +318,12 @@ saveJob.run(
 
 console.log(
   `[JOB MATCH] ${c.name} (${c.country}) | ` +
-  `${cleanTitle} | ${url}`
+  `Title: ${jobTitle.slice(0, 100)} | ` +
+  `Keywords: ${matchingKeywords.join(", ")} | ` +
+  `URL: ${url}`
 );
 
-      count++;
+count++;
     }
 
     const mail = $('a[href^="mailto:"]').first().attr("href");
