@@ -97,6 +97,47 @@ async function fetchArbeitnow(): Promise<Job[]> {
   return results;
 }
 
+async function fetchGreenhouse(): Promise<Job[]> {
+  const boards = [
+    {
+      company: "Anduril Industries",
+      token: "andurilindustries"
+    }
+  ];
+
+  const results: Job[] = [];
+
+  for (const board of boards) {
+    try {
+      const data = await getJson(
+        `https://boards-api.greenhouse.io/v1/boards/${board.token}/jobs?content=true`
+      );
+
+      for (const job of data.jobs || []) {
+        results.push({
+          title: job.title || "",
+          description: job.content || "",
+          company: board.company,
+          location: job.location?.name || "Unknown",
+          url: job.absolute_url || "",
+          source: "Greenhouse"
+        });
+      }
+
+      console.log(
+        `[GREENHOUSE] ${board.company}: ${data.jobs?.length || 0} vacancies retrieved`
+      );
+    } catch (error) {
+      console.error(
+        `[GREENHOUSE ERROR] ${board.company}`,
+        error
+      );
+    }
+  }
+
+  return results;
+}
+
 const sources = [
   { name: "Remotive", fetchJobs: fetchRemotive },
   { name: "Arbeitnow", fetchJobs: fetchArbeitnow }
