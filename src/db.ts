@@ -37,3 +37,37 @@ CREATE TABLE IF NOT EXISTS jobs (
   FOREIGN KEY(company_id) REFERENCES companies(id)
 );
 `);
+
+export function getOrCreateCompany(
+  name: string,
+  country: string,
+  sourceUrl: string
+): number {
+  const existing = db.prepare(`
+    SELECT id FROM companies
+    WHERE name = ? AND country = ?
+  `).get(name, country) as { id: number } | undefined;
+
+  if (existing) {
+    return existing.id;
+  }
+
+  const result = db.prepare(`
+    INSERT INTO companies (
+      name,
+      country,
+      website,
+      careers_url,
+      status
+    )
+    VALUES (?, ?, ?, ?, 'discovered')
+  `).run(
+    name,
+    country,
+    sourceUrl,
+    sourceUrl
+  );
+
+  return Number(result.lastInsertRowid);
+}
+
