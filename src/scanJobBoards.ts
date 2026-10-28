@@ -140,7 +140,8 @@ async function fetchGreenhouse(): Promise<Job[]> {
 
 const sources = [
   { name: "Remotive", fetchJobs: fetchRemotive },
-  { name: "Arbeitnow", fetchJobs: fetchArbeitnow }
+  { name: "Arbeitnow", fetchJobs: fetchArbeitnow },
+  { name: "Greenhouse", fetchJobs: fetchGreenhouse }
 ];
 
 let total = 0;
