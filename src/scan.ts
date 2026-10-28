@@ -258,9 +258,7 @@ for (const c of companies.slice(0, max)) {
         !isApprovedPlatform
       ) continue;
 
-
-   
-const cleanTitle = title.replace(/\s+/g, " ").trim();
+    const cleanTitle = title.replace(/\s+/g, " ").trim();
 const lowerTitle = cleanTitle.toLowerCase();
 
 const excludedTitles =
@@ -315,8 +313,8 @@ console.log(
   `${cleanTitle} | ${url}`
 );
 
-count++;
-
+      count++;
+    }
 
     const mail = $('a[href^="mailto:"]').first().attr("href");
 
