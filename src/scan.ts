@@ -260,41 +260,63 @@ for (const c of companies.slice(0, max)) {
 
 
    
-      const context = $(a)
-        .closest("article,li,tr,[class*='job'],[class*='position']")
-        .first()
-        .text()
-        .replace(/\s+/g, " ")
-        .trim();
+const cleanTitle = title.replace(/\s+/g, " ").trim();
+const lowerTitle = cleanTitle.toLowerCase();
 
-      const searchableText = `${title} ${context}`.toLowerCase();
+const excludedTitles =
+  /privacy|recruitment scams?|diversity|inclusion|cookie|policy|terms|about us|our people|career opportunities|recruitment site|all jobs|explore jobs|view jobs|job alerts|talent community|home careers/i;
 
-      const matchingKeywords = profile.keywords.filter(
-        (keyword: string) =>
-          searchableText.includes(keyword.toLowerCase())
-      );
+if (excludedTitles.test(cleanTitle)) continue;
 
-      if (matchingKeywords.length === 0) continue;
+// The job title itself must match Victor's target roles.
+const targetRoles =
+  /\b(project engineer|mechanical project engineer|offshore project engineer|piping project engineer|fabrication project engineer)\b/i;
 
-      const jobTitle =
-        title.length >= 8 &&
-        !/^(apply|view|details|learn more|read more)/i.test(title)
-          ? title
-          : context.slice(0, 150);
+if (!targetRoles.test(cleanTitle)) continue;
 
-      if (!jobTitle || jobTitle.length < 8) continue;
+// Reject obvious graduate and internship positions.
+if (/\b(intern|internship|graduate|trainee|apprentice)\b/i.test(cleanTitle)) {
+  continue;
+}
 
+// Reject navigation links and generic career pages.
+const genericPath =
+  /\/(privacy|scam|diversity|about|contact|recruitment|careers?)\/?$/i;
 
-      const now = new Date().toISOString();
-      saveJob.run(c.id, jobTitle.slice(0, 250), url, now, now);
-      
-      console.log(
-        `[JOB CANDIDATE] ${c.name} (${c.country}) | ` +
-        `Title: ${jobTitle.slice(0, 100)} | URL: ${url}`
-      );
+if (genericPath.test(new URL(url).pathname)) continue;
 
-      count++;
-    }
+// Look for a job-specific URL or a structured job listing.
+const jobUrlPattern =
+  /\/(job|jobs|job-description|jobdetail|jobdetails|position|positions|vacancy|vacancies|requisition|req)\b|\/job\/[^/]+|\/jobs\/[^/]+/i;
+
+const jobContainer = $(a).closest(
+  "article,li,tr,[class*='job-card'],[class*='job-listing'],[class*='job-result'],[data-job-id]"
+);
+
+const hasJobEvidence =
+  jobUrlPattern.test(new URL(url).pathname) ||
+  jobContainer.is("[data-job-id]") ||
+  jobContainer.is("[class*='job-card'],[class*='job-listing'],[class*='job-result']");
+
+if (!hasJobEvidence) continue;
+
+const now = new Date().toISOString();
+
+saveJob.run(
+  c.id,
+  cleanTitle.slice(0, 250),
+  url,
+  now,
+  now
+);
+
+console.log(
+  `[JOB MATCH] ${c.name} (${c.country}) | ` +
+  `${cleanTitle} | ${url}`
+);
+
+count++;
+
 
     const mail = $('a[href^="mailto:"]').first().attr("href");
 
