@@ -1,0 +1,50 @@
+
+{
+  "jobBoards": [
+    {
+      "name": "JobStreet Singapore",
+      "country": "Singapore",
+      "url": "https://sg.jobstreet.com"
+    },
+    {
+      "name": "JobStreet Malaysia",
+      "country": "Malaysia",
+      "url": "https://my.jobstreet.com"
+    },
+    {
+      "name": "JobStreet Indonesia",
+      "country": "Indonesia",
+      "url": "https://id.jobstreet.com"
+    },
+    {
+      "name": "JobsDB Thailand",
+      "country": "Thailand",
+      "url": "https://th.jobsdb.com"
+    },
+    {
+      "name": "SEEK Australia",
+      "country": "Australia",
+      "url": "https://www.seek.com.au"
+    },
+    {
+      "name": "SEEK New Zealand",
+      "country": "New Zealand",
+      "url": "https://www.seek.co.nz"
+    },
+    {
+      "name": "Indeed",
+      "country": "International",
+      "url": "https://www.indeed.com"
+    },
+    {
+      "name": "LinkedIn Jobs",
+      "country": "International",
+      "url": "https://www.linkedin.com/jobs"
+    },
+    {
+      "name": "Rigzone",
+      "country": "International",
+      "url": "https://www.rigzone.com"
+    }
+  ]
+}
