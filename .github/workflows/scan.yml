@@ -72,7 +72,8 @@ jobs:
         run: npm run scan
         env:
           MAX_COMPANIES: "500"
-
+      - name: Scan job boards
+        run: npx tsx src/scanJobBoards.ts
       - name: Build dashboard
         run: npm run build
 
