@@ -259,7 +259,6 @@ for (const c of companies.slice(0, max)) {
       ) continue;
 
     const cleanTitle = title.replace(/\s+/g, " ").trim();
-const lowerTitle = cleanTitle.toLowerCase();
 
 const excludedTitles =
   /privacy|recruitment scams?|diversity|inclusion|cookie|policy|terms|about us|our people|career opportunities|recruitment site|all jobs|explore jobs|view jobs|job alerts|talent community|home careers/i;
